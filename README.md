@@ -11,6 +11,8 @@ Coder une page web interactive d'ici fin Aout.
 
 home : page d'acceuil
 
-Eventuelement Formulaire pour sonder les dispos.
+fenetre popup avec les infos pour postuler.
+
+Eventuelement Formulaire pour sonder les dispos. 
 
 
