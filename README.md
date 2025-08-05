@@ -1,12 +1,16 @@
 # Crit-boulogne.fr
 
 ###### Objectif
-Crée un site web fontionnel pour présenter l'agence crit d'ici début Aout.
+Crée une page web fontionnel pour présenter l'agence crit d'ici début Aout.
 
 ###### But
-Coder un site web fonctionel d'ici début Aout.
+
+Coder une page web interactive d'ici fin Aout.
 
 ##### STRUCURATION DU SITE
 
 home : page d'acceuil
+
+Eventuelement Formulaire pour sonder les dispos.
+
 
