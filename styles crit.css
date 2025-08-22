@@ -1,0 +1,78 @@
+/* PAGE [CSS] Contient tout les styles graphiques */
+
+/* ORDRE PRIORITE: 
+1. Styles html (dans la page html)
+2. Styles ID [#]
+3. Styles Class [.]
+4. Styles généreaux (balises)
+*/
+
+/* REGLAGES CUSTOM */
+:root {
+    /* Couleurs perso */
+    --c0 : #0b1329;
+    --c1 : #c91f1f;
+    --c2 : #00113f;
+    --c3 : #809ae2;
+    --c4 : #6d6d6d6e;
+    /* Couleurs */
+    --white : #fff;
+    --black : #000000;
+    /* Marge ? */
+    --breakpoint-xs : 0;
+
+    /* Fonts */
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+/* BASES */
+
+html,body {
+    /* box */
+        margin: 0;
+        padding: 0;
+        border: 0;
+    /*screen */
+        width: 100%;
+        height: 100%;
+    }
+
+
+div,form,img {
+    text-align: center;
+    border: 0px;
+        
+    /* diplay */
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+}
+
+/* TEXTES */
+h1,h2,h3,h4,h5,h6,p,a {
+    color: var(--black);
+    text-align: center;
+    
+    margin: 0px;
+    border: 0px;
+    padding: 0px;
+}
+
+/* FORMULAIRE */
+form {
+    width: 100%;
+    display: block;
+}
+
+input {
+    align-items: center;
+}
+
+/* CLASS */
+
+.frame {
+    width: 100%;
+    height: 100%;
+}

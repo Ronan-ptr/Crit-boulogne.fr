@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Disponibilités - CRIT Événementiel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        critred: '#E31E24',
+                        critorange: '#FF6B35',
+                        critdark: '#2D2D2D',
+                    },
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles pour le calendrier des disponibilités */
+        .availability-calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+        .availability-day {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .availability-day:hover {
+            transform: scale(1.1);
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        @media (max-width: 768px) {
+            .responsive-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+        
+        /* Override DaisyUI colors avec les couleurs CRIT */
+        .btn-primary {
+            background-color: #E31E24;
+            border-color: #E31E24;
+        }
+        .btn-primary:hover {
+            background-color: #c91f1f;
+            border-color: #c91f1f;
+        }
+        .text-primary {
+            color: #E31E24 !important;
+        }
+        .checkbox:checked,
+        .radio:checked {
+            background-color: #E31E24;
+            border-color: #E31E24;
+        }
+        .toggle:checked {
+            background-color: #E31E24;
+            border-color: #E31E24;
+        }
+        .bg-primary {
+            background-color: #E31E24 !important;
+        }
+        .border-primary {
+            border-color: #E31E24 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50 font-sans">
+    <!-- Drawer (Sidebar) -->
+    <div class="drawer lg:drawer-open">
+        <input id="my-drawer" type="checkbox" class="drawer-toggle" />
+        
+        <!-- Page content -->
+        <div class="drawer-content flex flex-col">
+            <!-- Header -->
+            <header class="sticky top-0 z-10 bg-white shadow-sm border-b-2 border-critred">
+                <div class="navbar px-4">
+                    <div class="flex-none lg:hidden">
+                        <label for="my-drawer" class="btn btn-square btn-ghost text-critred">
+                            <i class="fas fa-bars text-xl"></i>
+                        </label>
+                    </div>
+
+                    <div class="flex-1"> <!-- BARRE DE RECHERCHE -->
+                                              
+                        <!-- NOUVELLE VERSION avec barre de recherche -->
+                        <div class="flex items-center gap-4 w-full max-w-2xl">
+
+                            <!-- Icône et titre condensé (visible sur desktop seulement) -->
+                            <div class="hidden lg:flex items-center gap-2 text-critdark font-semibold">
+                                
+                            </div>
+
+                            <!-- Filtres rapides -->
+                            <div class="hidden md:flex items-center gap-2">
+                                <div class="dropdown dropdown-bottom dropdown-start">
+                                    <label tabindex="0" class="btn btn-ghost btn-sm border border-gray-200 hover:border-critred">
+                                        <i class="fas fa-filter mr-1"></i>
+                                        <span class="hidden lg:inline">Filtres</span>
+                                    </label>
+                                    <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-lg w-52 mt-1 border">
+                                        <li><a onclick="quickFilter('disponible')"><span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>Disponibles</a></li>
+                                        <li><a onclick="quickFilter('occupe')"><span class="w-3 h-3 bg-red-500 rounded-full mr-2"></span>Occupés</a></li>
+                                        <li><a onclick="quickFilter('attente')"><span class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>En attente</a></li>
+                                        <li><hr class="my-1"></li>
+                                        <li><a onclick="clearFilters()">Effacer les filtres</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Barre de recherche -->
+                            <div class="flex-1 relative">
+                                <div class="relative">
+                                    <input 
+                                        type="text" 
+                                        id="search-input"
+                                        placeholder="Rechercher par nom, date, statut..." 
+                                        class="input input-bordered w-full pl-10 pr-12 bg-gray-50 border-gray-200 focus:border-critred focus:outline-none focus:bg-white transition-colors"
+                                    />
+                                    
+                                    <!-- Icône de recherche -->
+                                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                    
+                                    <!-- Bouton de nettoyage (apparaît quand on tape) -->
+                                    <button 
+                                        type="button" 
+                                        id="clear-search"
+                                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-critred transition-colors opacity-0 pointer-events-none"
+                                        onclick="clearSearch()"
+                                    >
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Dropdown des suggestions (masqué par défaut) -->
+                                <div id="search-suggestions" class="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-50 hidden">
+                                    <div class="p-2">
+                                        <div class="text-xs text-gray-500 mb-2 px-2">Recherches récentes</div>
+                                        <!-- Les suggestions seront ajoutées ici dynamiquement -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            
+                        </div>
+                    </div>
+
+                    <div class="flex-none gap-2">
+                        <!-- Notifications -->
+                        <div class="indicator">
+                            <span class="indicator-item badge bg-critorange text-white text-xs">3</span>
+                            <button class="btn btn-ghost btn-circle text-critdark hover:text-critred">
+                                <i class="fas fa-bell text-lg"></i>
+                            </button>
+                        </div>
+                        
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main content -->
+            <main class="flex-1 p-6">
+                <!-- Page Title -->
+                <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-critdark">Disponibilités de mes équipes</h1>
+                        <p class="text-gray-600 mt-1">Gérez les disponibilités de vos équipes</p>
+                    </div>
+                    <button class="btn bg-critred hover:bg-red-700 text-white border-0 shadow-lg">
+                        <i class="fas fa-plus mr-2"></i> Ajouter une équipe
+                    </button>
+                </div>
+                
+                <!-- Statistics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="card bg-white shadow-md border-l-4 border-critred">
+                        <div class="card-body p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-600">Disponibles</p>
+                                    <p class="text-2xl font-bold text-critdark">24</p>
+                                </div>
+                                <div class="bg-green-100 p-3 rounded-full">
+                                    <i class="fas fa-check text-green-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card bg-white shadow-md border-l-4 border-yellow-500">
+                        <div class="card-body p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-600">En cours</p>
+                                    <p class="text-2xl font-bold text-critdark">8</p>
+                                </div>
+                                <div class="bg-yellow-100 p-3 rounded-full">
+                                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card bg-white shadow-md border-l-4 border-critorange">
+                        <div class="card-body p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-600">Indisponibles</p>
+                                    <p class="text-2xl font-bold text-critdark">12</p>
+                                </div>
+                                <div class="bg-red-100 p-3 rounded-full">
+                                    <i class="fas fa-times text-red-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card bg-white shadow-md border-l-4 border-blue-500">
+                        <div class="card-body p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-600">Total équipe</p>
+                                    <p class="text-2xl font-bold text-critdark">44</p>
+                                </div>
+                                <div class="bg-blue-100 p-3 rounded-full">
+                                    <i class="fas fa-users text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filters -->
+                <div class="card bg-white shadow-md mb-6 border">
+                    <div class="card-body">
+                        <h3 class="text-lg font-semibold text-critdark mb-4 flex items-center">
+                            <i class="fas fa-filter text-critred mr-2"></i>
+                            Filtres
+                        </h3>
+                        <form id="filters-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Date Range -->
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-medium text-critdark">Date de début</span>
+                                </label>
+                                <input type="date" class="input input-bordered w-full focus:border-critred focus:outline-none" value="2025-01-01" />
+                            </div>
+                            
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-medium text-critdark">Date de fin</span>
+                                </label>
+                                <input type="date" class="input input-bordered w-full focus:border-critred focus:outline-none" value="2025-01-31" />
+                            </div>
+                            
+                            <!-- Status Filter -->
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-medium text-critdark">Statuts</span>
+                                </label>
+                                <div class="dropdown">
+                                    <label tabindex="0" class="btn btn-outline border-gray-300 hover:border-critred hover:bg-critred hover:text-white w-full justify-start">
+                                        <i class="fas fa-chevron-down mr-2"></i>
+                                        Tous les statuts
+                                    </label>
+                                    <div tabindex="0" class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-box w-80 border">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <label class="cursor-pointer label justify-start gap-2 hover:bg-gray-50 rounded p-2">
+                                                <input type="checkbox" checked="checked" class="checkbox checkbox-xs" value="1" />
+                                                <span class="label-text">❌ ACR</span>
+                                            </label>
+                                            <label class="cursor-pointer label justify-start gap-2 hover:bg-gray-50 rounded p-2">
+                                                <input type="checkbox" checked="checked" class="checkbox checkbox-xs" value="2" />
+                                                <span class="label-text">✅ ACC</span>
+                                            </label>
+                                            <label class="cursor-pointer label justify-start gap-2 hover:bg-gray-50 rounded p-2">
+                                                <input type="checkbox" checked="checked" class="checkbox checkbox-xs" value="3" />
+                                                <span class="label-text">📧 Envoyé</span>
+                                            </label>
+                                            <label class="cursor-pointer label justify-start gap-2 hover:bg-gray-50 rounded p-2">
+                                                <input type="checkbox" checked="checked" class="checkbox checkbox-xs" value="4" />
+                                                <span class="label-text">🖨️ Reçu</span>
+                                            </label>
+                                            <label class="cursor-pointer label justify-start gap-2 hover:bg-gray-50 rounded p-2">
+                                                <input type="checkbox" checked="checked" class="checkbox checkbox-xs" value="5" />
+                                                <span class="label-text">✅ Donné</span>
+                                            </label>
+                                            <label class="cursor-pointer label justify-start gap-2 hover:bg-gray-50 rounded p-2">
+                                                <input type="checkbox" checked="checked" class="checkbox checkbox-xs" value="6" />
+                                                <span class="label-text">⚠️ A SAISIR</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Full Availability Toggle -->
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-medium text-critdark">Options</span>
+                                </label>
+                                <label class="cursor-pointer label justify-start gap-2 bg-gray-50 rounded-lg p-3 hover:bg-gray-100">
+                                    <input type="checkbox" class="toggle" id="full-only" />
+                                    <span class="label-text">100% libres seulement</span>
+                                </label>
+                            </div>
+                        </form>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <button class="btn bg-critred hover:bg-red-700 text-white border-0">
+                                <i class="fas fa-search mr-2"></i>Rechercher
+                            </button>
+                            <button class="btn btn-outline border-gray-300 hover:border-critred hover:bg-critred hover:text-white">
+                                <i class="fas fa-redo mr-2"></i>Réinitialiser
+                            </button>
+                            <button class="btn btn-outline border-gray-300 hover:border-critorange hover:bg-critorange hover:text-white">
+                                <i class="fas fa-download mr-2"></i>Exporter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Results Table -->
+                <div class="card bg-white shadow-md border">
+                    <div class="card-body p-0">
+                        <!-- Table Header -->
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <h3 class="text-lg font-semibold text-critdark flex items-center">
+                                    <i class="fas fa-table text-critred mr-2"></i>
+                                    Résultats
+                                </h3>
+                                <div class="text-sm text-gray-600">
+                                    Affichage de <span id="start-item">1</span> à <span id="end-item">20</span> sur <span id="total-items">156</span> résultats
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Table -->
+                        <div class="responsive-table overflow-x-auto">
+                            <table class="table w-full">
+                                <thead>
+                                    <tr class="bg-gray-50">
+                                        <th class="text-left font-semibold text-critdark">
+                                            <input type="checkbox" class="checkbox checkbox-sm" />
+                                        </th>
+                                        <th class="text-left font-semibold text-critdark">Personne</th>
+                                        <th class="text-left font-semibold text-critdark">Période</th>
+                                        <th class="text-left font-semibold text-critdark">Statut</th>
+                                        <th class="text-left font-semibold text-critdark">Disponibilité</th>
+                                        <th class="text-left font-semibold text-critdark">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Sample rows -->
+                                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                                        <td><input type="checkbox" class="checkbox checkbox-sm" /></td>
+                                        <td>
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-8 h-8 rounded-full bg-critred text-white flex items-center justify-center text-sm">
+                                                    JD
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-critdark">DUPONT Jean</div>
+                                                    <div class="text-sm text-gray-500">ID: 123456</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-critdark">01/01/2025 - 15/01/2025</td>
+                                        <td>
+                                            <span class="status-badge bg-green-100 text-green-800 font-medium">
+                                                ✅ ACC
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="availability-calendar">
+                                                <div class="availability-day bg-green-200 text-green-800">1</div>
+                                                <div class="availability-day bg-green-200 text-green-800">2</div>
+                                                <div class="availability-day bg-red-200 text-red-800">3</div>
+                                                <div class="availability-day bg-green-200 text-green-800">4</div>
+                                                <div class="availability-day bg-green-200 text-green-800">5</div>
+                                                <div class="availability-day bg-yellow-200 text-yellow-800">6</div>
+                                                <div class="availability-day bg-green-200 text-green-800">7</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="flex gap-2">
+                                                <button class="btn btn-sm bg-critred hover:bg-red-700 text-white border-0" onclick="openEditModal()">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm bg-critorange hover:bg-orange-600 text-white border-0">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline border-gray-300 hover:border-red-500 hover:bg-red-500 hover:text-white">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Plus de lignes d'exemple... -->
+                                    <tr class="hover:bg-gray-50 border-b border-gray-100">
+                                        <td><input type="checkbox" class="checkbox checkbox-sm" /></td>
+                                        <td>
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-8 h-8 rounded-full bg-critred text-white flex items-center justify-center text-sm">
+                                                    MM
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-critdark">MARTIN Marie</div>
+                                                    <div class="text-sm text-gray-500">ID: 789012</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-critdark">01/01/2025 - 15/01/2025</td>
+                                        <td>
+                                            <span class="status-badge bg-yellow-100 text-yellow-800 font-medium">
+                                                📧 Envoyé
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="availability-calendar">
+                                                <div class="availability-day bg-red-200 text-red-800">1</div>
+                                                <div class="availability-day bg-green-200 text-green-800">2</div>
+                                                <div class="availability-day bg-green-200 text-green-800">3</div>
+                                                <div class="availability-day bg-red-200 text-red-800">4</div>
+                                                <div class="availability-day bg-green-200 text-green-800">5</div>
+                                                <div class="availability-day bg-green-200 text-green-800">6</div>
+                                                <div class="availability-day bg-yellow-200 text-yellow-800">7</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="flex gap-2">
+                                                <button class="btn btn-sm bg-critred hover:bg-red-700 text-white border-0" onclick="openEditModal()">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm bg-critorange hover:bg-orange-600 text-white border-0">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline border-gray-300 hover:border-red-500 hover:bg-red-500 hover:text-white">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="p-6 border-t border-gray-200">
+                            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                                <div class="text-sm text-gray-600">
+                                    Affichage de <span id="start-item">1</span> à <span id="end-item">20</span> sur <span id="total-items">156</span> résultats
+                                </div>
+                                <div class="join">
+                                    <button class="join-item btn btn-sm border-gray-300 hover:border-critred hover:bg-critred hover:text-white" disabled>
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <button class="join-item btn btn-sm bg-critred text-white border-critred">1</button>
+                                    <button class="join-item btn btn-sm border-gray-300 hover:border-critred hover:bg-critred hover:text-white">2</button>
+                                    <button class="join-item btn btn-sm border-gray-300 hover:border-critred hover:bg-critred hover:text-white">3</button>
+                                    <button class="join-item btn btn-sm border-gray-300 hover:border-critred hover:bg-critred hover:text-white">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="drawer-side z-20">
+            <label for="my-drawer" class="drawer-overlay"></label>
+            <div class="menu p-4 w-80 h-full bg-white text-base-content shadow-xl border-r">
+                <!-- Logo/Brand -->
+                <div class="flex items-center gap-2 mb-8 p-2 border-b border-gray-200">
+                    <label for="my-drawer" class="btn btn-square btn-ghost text-critred">
+                        <i class="fas fa-bars text-xl"></i>
+                    </label>
+                    <div>
+                        <h2 class="text-lg font-bold text-critdark">CRIT Dispo</h2>
+                        <p class="text-xs text-gray-500">Gestion Disponibilités</p>
+                    </div>
+
+                </div>
+                
+                <!-- Navigation Menu -->
+                <ul class="space-y-1">
+                    <!-- Acceuil
+                    <li>
+                        <a href="index.html" class="flex items-center gap-3 p-3 rounded-lg text-critdark hover:bg-gray-50 hover:text-critred transition-colors">
+                            <i class="fas fa-home text-lg"></i>
+                            <span class="font-medium">Accueil</span>
+                        </a>
+                    </li> -->
+                    <li>
+                        <a href="#" class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 text-critred font-medium">
+                            <i class="fas fa-calendar-check text-lg"></i>
+                            <span>Disponibilités</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-critdark hover:bg-gray-50 hover:text-critred transition-colors">
+                            <i class="fas fa-users text-lg"></i>
+                            <span class="font-medium">Équipes</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-critdark hover:bg-gray-50 hover:text-critred transition-colors">
+                            <i class="fas fa-clipboard-list text-lg"></i>
+                            <span class="font-medium">Plannings</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-critdark hover:bg-gray-50 hover:text-critred transition-colors">
+                            <i class="fas fa-chart-bar text-lg"></i>
+                            <span class="font-medium">Statistiques Pax.</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-critdark hover:bg-gray-50 hover:text-critred transition-colors">
+                            <i class="fas fa-clipboard-list text-lg"></i>
+                            <span class="font-medium">Commandes</span>
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- User Info -->
+                <div class="mt-auto pt-6 border-t border-gray-200">
+                    <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                       
+                        <!-- User Menu -->
+                        <div class="dropdown dropdown-start">
+                            
+                            <!-- User Menu -->
+                            <label tabindex="0" class="btn btn-ghost btn-circle avatar">
+                                <div class="w-10 rounded-full bg-critred text-white flex items-center justify-center">
+                                    <i class="fas fa-user text-lg"></i>
+                                </div>
+                            </label> 
+
+                            <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-lg bg-base-100 rounded-lg w-52 border">
+                                <li class="border-b border-gray-100 pb-2 mb-2">
+                                    <div class="flex items-center gap-2 p-2">
+                                        <div class="w-8 h-8 rounded-full bg-critred text-white flex items-center justify-center text-sm">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-critdark">Admin User</p>
+                                            <p class="text-xs text-gray-500">Administrateur</p>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li><a class="text-critdark hover:text-critred hover:bg-gray-50"><i class="fas fa-cog text-critred"></i> Paramètres</a></li>
+                                <li><a class="text-critdark hover:text-critred hover:bg-gray-50"><i class="fas fa-sign-out-alt text-critred"></i> Déconnexion</a></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="font-medium text-critdark">POTIER Ronan</p>
+                            <p class="text-xs text-gray-500">Administrateur</p>
+                        </div>
+
+                    </div>
+                    <div>
+                    <button class="btn btn-outline border-gray-300 hover:border-critred hover:bg-critred hover:text-white btn-sm w-full mt-3">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
+                    </button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add/Edit Availability Modal -->
+    <dialog id="availability-modal" class="modal">
+        <div class="modal-box w-11/12 max-w-3xl border">
+            <form method="dialog">
+                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 text-gray-500 hover:text-critred">✕</button>
+            </form>
+            <h3 class="font-bold text-xl text-critdark mb-1">Modifier disponibilité</h3>
+            <p class="text-gray-600 mb-6">Modifiez les informations de disponibilité</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium text-critdark">Personne</span>
+                    </label>
+                    <input type="text" class="input input-bordered w-full bg-gray-50 focus:border-critred focus:outline-none" value="DUPONT Jean (123456)" readonly />
+                </div>
+                
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium text-critdark">Date</span>
+                    </label>
+                    <input type="date" class="input input-bordered w-full focus:border-critred focus:outline-none" />
+                </div>
+                
+                <div class="form-control md:col-span-2">
+                    <label class="label">
+                        <span class="label-text font-medium text-critdark">Statut</span>
+                    </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <label class="cursor-pointer label justify-start gap-2 border rounded-lg p-3 hover:bg-gray-50 hover:border-critred transition-colors">
+                            <input type="radio" name="status" class="radio" checked />
+                            <span class="label-text">❌ ACR</span>
+                        </label>
+                        <label class="cursor-pointer label justify-start gap-2 border rounded-lg p-3 hover:bg-gray-50 hover:border-critred transition-colors">
+                            <input type="radio" name="status" class="radio" />
+                            <span class="label-text">✅ ACC</span>
+                        </label>
+                        <label class="cursor-pointer label justify-start gap-2 border rounded-lg p-3 hover:bg-gray-50 hover:border-critred transition-colors">
+                            <input type="radio" name="status" class="radio" />
+                            <span class="label-text">📧 Envoyé</span>
+                        </label>
+                        <label class="cursor-pointer label justify-start gap-2 border rounded-lg p-3 hover:bg-gray-50 hover:border-critred transition-colors">
+                            <input type="radio" name="status" class="radio" />
+                            <span class="label-text">🖨️ Reçu</span>
+                        </label>
+                        <label class="cursor-pointer label justify-start gap-2 border rounded-lg p-3 hover:bg-gray-50 hover:border-critred transition-colors">
+                            <input type="radio" name="status" class="radio" />
+                            <span class="label-text">✅ Donné</span>
+                        </label>
+                        <label class="cursor-pointer label justify-start gap-2 border rounded-lg p-3 hover:bg-gray-50 hover:border-critred transition-colors">
+                            <input type="radio" name="status" class="radio" />
+                            <span class="label-text">⚠️ A SAISIR</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-control md:col-span-2">
+                    <label class="label">
+                        <span class="label-text font-medium text-critdark">Notes</span>
+                    </label>
+                    <textarea class="textarea textarea-bordered w-full focus:border-critred focus:outline-none" rows="3" placeholder="Ajoutez des notes ou commentaires..."></textarea>
+                </div>
+            </div>
+            
+            <div class="modal-action mt-8">
+                <button type="button" class="btn btn-outline border-gray-300 hover:border-gray-400" onclick="closeEditModal()">
+                    <i class="fas fa-times mr-2"></i>Annuler
+                </button>
+                <button type="submit" class="btn bg-critred hover:bg-red-700 text-white border-0">
+                    <i class="fas fa-save mr-2"></i>Enregistrer
+                </button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Scripts -->
+    <script>
+        // Fonction pour ouvrir le modal d'édition
+        function openEditModal() {
+            document.getElementById('availability-modal').showModal();
+        }
+        
+        // Fonction pour fermer le modal d'édition
+        function closeEditModal() {
+            document.getElementById('availability-modal').close();
+        }
+        
+        // Animation d'entrée pour les cartes statistiques
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.4s ease-out';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+        
+        // Fonction pour la recherche
+        function performSearch() {
+            // Ici tu pourras ajouter la logique de recherche
+            console.log('Recherche en cours...');
+        }
+        
+        // Fonction pour réinitialiser les filtres
+        function resetFilters() {
+            document.getElementById('filters-form').reset();
+        }
+        
+        // Toggle pour la sidebar mobile
+        function toggleSidebar() {
+            const drawer = document.getElementById('my-drawer');
+            drawer.checked = !drawer.checked;
+        }
+    </script>
+
+</body>
+</html>
