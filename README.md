@@ -97,6 +97,7 @@ docker compose up --build
 ## 🗓️ Échéances
 
 | Livrable | Date cible |
+|---|---|
 | Dashboard | Fin Avril 2026 |
 | Site web fonctionnel | Début Mai |
 | Page web interactive complète | Fin Avril |
