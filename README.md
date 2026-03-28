@@ -21,6 +21,8 @@ crit-agency/
 ├── README.md                   # Project documentation
 ├── docker-compose.yml          # Container orchestration (coming soon)
 │
+├── data/                       # Where you should put the data and ressources
+│
 ├── website/                    # Public website (HTML/CSS)
 │   ├── index.html              # Agency homepage
 │   ├── style.css               # Stylesheet
