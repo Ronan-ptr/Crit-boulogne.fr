@@ -15,5 +15,7 @@ df = pd.read_csv("/home/prime/Projets/2026_PROJECT-DA/DATA/new_dataset.csv")
 
 #st.write("Pick up an event : ")
 event_list = list(df["event_file"].unique())
-st.selectbox("Pick up an event :", options=event_list)
+event_selected = st.selectbox("Pick up an event :", options=event_list, placeholder="All Events")
 
+# Afficher dataframe de l'event
+st.dataframe(df[df["event_file"] == event_selected].head())
