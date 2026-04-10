@@ -15,13 +15,13 @@ Provide Crit Agency with a simple and effective tool to:
 ## 🏗️ Project Architecture
 
 ```
-crit-agency/
+Crit-boulogne.fr/
 │
 ├── .gitignore                  # Files excluded from Git
 ├── README.md                   # Project documentation
 ├── docker-compose.yml          # Container orchestration (coming soon)
 │
-├── data/                       # Where you should put the data and ressources
+├── data/                       # Where you should put the data and ressources # Event CSV files (ignored by Git)
 │
 ├── website/                    # Public website (HTML/CSS)
 │   ├── index.html              # Agency homepage
@@ -29,11 +29,17 @@ crit-agency/
 │   └── assets/                 # Images, icons, fonts
 │
 └── dashboard/                  # Analytical application (Python/Streamlit)
-    ├── Dockerfile              # Dashboard Docker image
     ├── requirements.txt        # Python dependencies
-    ├── app.py                  # Main Streamlit application
-    └── data/                   # Event CSV files (ignored by Git)
-        └── .gitkeep
+    ├── app.py                  # Main Streamlit application  
+    │
+    ├── utils/
+    │   ├── __init__.py
+    │   └── data_loader.py      # Centralised loader
+    └── pages/
+        ├── 1_📊_Overview.py
+        ├── 2_⏱️_Punctuality.py
+        ├── 3_⚙️_Processing.py
+        └── 4_🤝_Retention.py
 ```
 ## 🌐 Website — `website/`
 
