@@ -1,0 +1,30 @@
+# ============================================================
+# CONFIGURATION STREAMLIT
+# ============================================================
+# Ce fichier existe pour permettre la communication entre
+# le site web statique (crit-boulogne.fr) et le dashboard
+# Streamlit (dashboard.crit-boulogne.fr). Par défaut, Streamlit
+# embarque des protections de sécurité qui bloquent les requêtes
+# provenant d'une origine différente. Dans notre architecture,
+# le site web et le dashboard sont deux services distincts :
+# cette config désactive ces restrictions pour autoriser leur
+# communication interne.
+# ============================================================
+
+[server]
+
+# CORS — Cross-Origin Resource Sharing
+# Par défaut, Streamlit refuse les requêtes provenant d'un domaine
+# différent du sien. Ici, crit-boulogne.fr est considéré comme une
+# origine étrangère par dashboard.crit-boulogne.fr. En désactivant
+# cette protection, on autorise le site web à interroger le dashboard
+# sans être bloqué.
+enableCORS = false
+
+# XSRF — Cross-Site Request Forgery Protection
+# Streamlit vérifie que chaque requête POST provient bien de sa propre
+# interface. Une requête arrivant depuis crit-boulogne.fr échoue cette
+# vérification et reçoit un 403. En désactivant cette protection, on
+# autorise les requêtes POST externes légitimes, comme le bouton de
+# redirection de notre site vers le dashboard.
+enableXsrfProtection = false
