@@ -4,7 +4,10 @@ import pandas as pd
 import streamlit as st
 import os
 
-DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "clean_dataset.csv")
+
+DATA_PATH = os.environ.get("DATA_PATH", "/app/data") + "/clean_dataset.csv"
+
+
 
 DEPT_MAP = {
     '75': 'Paris', '92': 'Hauts-de-Seine', '93': 'Seine-St-Denis',
