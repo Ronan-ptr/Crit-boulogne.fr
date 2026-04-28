@@ -3,10 +3,21 @@
 import pandas as pd
 import streamlit as st
 import os
+from pathlib import Path
 
+# Détection automatique : Docker d'abord, sinon chemin relatif au projet
+_DOCKER_PATH = "/app/data/clean_dataset.csv"
+_LOCAL_PATH = Path(__file__).parent.parent.parent / "data" / "clean_dataset.csv"
 
-DATA_PATH = os.environ.get("DATA_PATH", "/app/data") + "/clean_dataset.csv"
+if os.environ.get("DATA_PATH"):
+    DATA_PATH = os.environ["DATA_PATH"] + "/clean_dataset.csv"
+elif Path(_DOCKER_PATH).exists():
+    DATA_PATH = _DOCKER_PATH
+else:
+    DATA_PATH = str(_LOCAL_PATH)
 
+#Acien chemin fonctionnel sous docker
+#DATA_PATH = os.environ.get("DATA_PATH", "/app/data") + "/clean_dataset.csv"
 
 
 DEPT_MAP = {
